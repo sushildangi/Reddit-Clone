@@ -3,14 +3,21 @@ package com.luv2tech.service;
 import com.luv2tech.exceptions.SpringRedditException;
 import com.luv2tech.model.User;
 import com.luv2tech.model.VerificationToken;
+import com.luv2tech.payload.LoginPayload;
 import com.luv2tech.payload.RegistrationPayload;
 import com.luv2tech.repository.UserRepository;
 import com.luv2tech.repository.VerificationTokenRepository;
 import com.luv2tech.response.ApiResponse;
+import com.luv2tech.response.AuthenticationResponse;
 import com.luv2tech.response.NotificationEmail;
+import com.luv2tech.security.JwtProvider;
 import lombok.AllArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.authentication.AuthenticationManager;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -30,6 +37,34 @@ public class AuthServiceImpl implements AuthService {
     private final PasswordEncoder passwordEncoder;
     private final VerificationTokenRepository verificationTokenRepository;
     private final MailService mailService;
+    private final AuthenticationManager authenticationManager;
+    private final JwtProvider jwtProvider;
+
+    @Override
+    public ResponseEntity<?> login(LoginPayload payload,
+                                   BindingResult result) {
+        ResponseEntity<?> responseEntity;
+        if (result.hasErrors()) {
+            responseEntity = new ResponseEntity<>(errorCollector.getErrorResponses(result), HttpStatus.BAD_REQUEST);
+        } else {
+            Authentication authenticate = authenticationManager.authenticate(
+                    new UsernamePasswordAuthenticationToken(
+                            payload.getUsername(),
+                            payload.getPassword()
+                    )
+            );
+            SecurityContextHolder.getContext().setAuthentication(authenticate);
+            String token = jwtProvider.generateToken(authenticate);
+            responseEntity = new ResponseEntity<>(
+                    new AuthenticationResponse(
+                            token,
+                            payload.getUsername()
+                    ),
+                    HttpStatus.OK
+            );
+        }
+        return responseEntity;
+    }
 
     @Override
     @Transactional

@@ -1,5 +1,6 @@
 package com.luv2tech.controller;
 
+import com.luv2tech.payload.LoginPayload;
 import com.luv2tech.payload.RegistrationPayload;
 import com.luv2tech.service.AuthService;
 import lombok.AllArgsConstructor;
@@ -8,6 +9,7 @@ import org.springframework.validation.BindingResult;
 import org.springframework.web.bind.annotation.*;
 
 import javax.validation.Valid;
+
 
 @RestController
 @RequestMapping("api/auth")
@@ -25,5 +27,11 @@ public class AuthController {
     @GetMapping("account-verification/{token}")
     public ResponseEntity<?>  verifyAccount(@PathVariable("token") String token){
         return authService.verifyAccount(token);
+    }
+    @PostMapping("sign-in")
+    public ResponseEntity<?> login(
+            @Valid @RequestBody LoginPayload payload,
+            BindingResult result){
+            return authService.login(payload,result);
     }
 }
